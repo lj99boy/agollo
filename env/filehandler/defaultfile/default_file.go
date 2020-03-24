@@ -1,9 +1,11 @@
-package env
+package defaultfile
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/zouyx/agollo/v3/env"
+	"github.com/zouyx/agollo/v3/env/filehandler"
 	"os"
 
 	"github.com/zouyx/agollo/v3/component/log"
@@ -12,14 +14,22 @@ import (
 
 const suffix = ".json"
 
+func init() {
+	filehandler.SetFileHandler(&DefaultFile{})
+}
+
+//DefaultFile 默认备份文件读写
+type DefaultFile struct {
+}
+
 var (
 	configFileMap  = make(map[string]string, 1)
 	jsonFileConfig = &jsonConfig.ConfigFile{}
 )
 
 //WriteWithRaw decorator for WriteConfigFile
-func WriteWithRaw(f func(config *ApolloConfig, configPath string) error) func(config *ApolloConfig, configPath string) error {
-	return func(config *ApolloConfig, configPath string) error {
+func (fileHandler *DefaultFile) WriteWithRaw(f func(config *env.ApolloConfig, configPath string) error) func(config *env.ApolloConfig, configPath string) error {
+	return func(config *env.ApolloConfig, configPath string) error {
 		filePath := fmt.Sprintf("%s/%s", configPath, config.NamespaceName)
 		file, e := os.Create(filePath)
 		if e != nil {
@@ -36,12 +46,12 @@ func WriteWithRaw(f func(config *ApolloConfig, configPath string) error) func(co
 }
 
 //WriteConfigFile write config to file
-func WriteConfigFile(config *ApolloConfig, configPath string) error {
-	return jsonFileConfig.Write(config, GetConfigFile(configPath, config.NamespaceName))
+func (fileHandler *DefaultFile) WriteConfigFile(config *env.ApolloConfig, configPath string) error {
+	return jsonFileConfig.Write(config, fileHandler.GetConfigFile(configPath, config.NamespaceName))
 }
 
 //GetConfigFile get real config file
-func GetConfigFile(configDir string, namespace string) string {
+func (fileHandler *DefaultFile) GetConfigFile(configDir string, namespace string) string {
 	fullPath := configFileMap[namespace]
 	if fullPath == "" {
 		filePath := fmt.Sprintf("%s%s", namespace, suffix)
@@ -55,11 +65,11 @@ func GetConfigFile(configDir string, namespace string) string {
 }
 
 //LoadConfigFile load config from file
-func LoadConfigFile(configDir string, namespace string) (*ApolloConfig, error) {
-	configFilePath := GetConfigFile(configDir, namespace)
+func (fileHandler *DefaultFile) LoadConfigFile(configDir string, namespace string) (*env.ApolloConfig, error) {
+	configFilePath := fileHandler.GetConfigFile(configDir, namespace)
 	log.Info("load config file from :", configFilePath)
 	c, e := jsonFileConfig.Load(configFilePath, func(b []byte) (interface{}, error) {
-		config := &ApolloConfig{}
+		config := &env.ApolloConfig{}
 		e := json.NewDecoder(bytes.NewBuffer(b)).Decode(config)
 		return config, e
 	})
@@ -69,5 +79,5 @@ func LoadConfigFile(configDir string, namespace string) (*ApolloConfig, error) {
 		return nil, e
 	}
 
-	return c.(*ApolloConfig), e
+	return c.(*env.ApolloConfig), e
 }

@@ -2,6 +2,7 @@ package agollo
 
 import (
 	"fmt"
+	"github.com/zouyx/agollo/v3/env/file/defaultfile"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -163,7 +164,7 @@ func TestAutoSyncConfigServicesNormal2NotModified(t *testing.T) {
 
 func checkBackupFile(t *testing.T) {
 	appConfig := env.GetPlainAppConfig()
-	newConfig, e := env.LoadConfigFile(appConfig.GetBackupConfigPath(), testDefaultNamespace)
+	newConfig, e := defaultfile.LoadConfigFile(appConfig.GetBackupConfigPath(), testDefaultNamespace)
 	t.Log(newConfig.Configurations)
 	Assert(t, e, NilVal())
 	Assert(t, newConfig.Configurations, NotNilVal())

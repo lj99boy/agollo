@@ -5,16 +5,17 @@ import (
 	"github.com/zouyx/agollo/v3/component"
 	"github.com/zouyx/agollo/v3/component/log"
 	"github.com/zouyx/agollo/v3/component/notify"
-	"github.com/zouyx/agollo/v3/component/serverlist"
+	_ "github.com/zouyx/agollo/v3/component/serverlist"
 	"github.com/zouyx/agollo/v3/env"
 	"github.com/zouyx/agollo/v3/env/config"
-	"github.com/zouyx/agollo/v3/loadbalance/roundrobin"
+	"github.com/zouyx/agollo/v3/env/file"
+	_ "github.com/zouyx/agollo/v3/env/file/defaultfile"
+	"github.com/zouyx/agollo/v3/env/filehandler"
+	_ "github.com/zouyx/agollo/v3/loadbalance/roundrobin"
 	"github.com/zouyx/agollo/v3/storage"
 )
 
 func init() {
-	roundrobin.InitLoadBalance()
-	serverlist.InitSyncServerIPList()
 }
 
 //InitCustomConfig init config by custom
@@ -38,6 +39,14 @@ func SetLogger(loggerInterface log.LoggerInterface) {
 func SetCache(cacheFactory agcache.CacheFactory) {
 	if cacheFactory != nil {
 		agcache.UseCacheFactory(cacheFactory)
+		storage.InitConfigCache()
+	}
+}
+
+//SetFile define backup file (write and read) handler
+func SetFileHandler(file filehandler.FileHandler) {
+	if file != nil {
+		filehandler.SetFileHandler(file)
 		storage.InitConfigCache()
 	}
 }
