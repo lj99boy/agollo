@@ -26,6 +26,8 @@ const (
 
 	//同步链接时间
 	syncNofityConnectTimeout = 3 * time.Second //3s
+
+	defaultNotificationId = int64(-1)
 )
 
 var (
@@ -45,10 +47,6 @@ type notificationsMap struct {
 type apolloNotify struct {
 	NotificationID int64  `json:"notificationId"`
 	NamespaceName  string `json:"namespaceName"`
-}
-
-func init() {
-	InitAllNotifications(nil)
 }
 
 //InitAllNotifications 初始化notificationsMap
@@ -96,12 +94,12 @@ func (n *notificationsMap) getNotifies(namespace string) string {
 			return true
 		})
 	} else {
-		n, _ := n.notifications.Load(namespace)
+		notify, _ := n.notifications.LoadOrStore(namespace, defaultNotificationId)
 
 		notificationArr = append(notificationArr,
 			&notification{
 				NamespaceName:  namespace,
-				NotificationID: n.(int64),
+				NotificationID: notify.(int64),
 			})
 	}
 
@@ -149,6 +147,11 @@ func SyncNamespaceConfig(namespace string) error {
 func syncConfigs(namespace string, isAsync bool) error {
 
 	remoteConfigs, err := notifyRemoteConfig(nil, namespace, isAsync)
+
+	if err != nil || len(remoteConfigs) == 0 {
+		appConfig := env.GetPlainAppConfig()
+		loadBackupConfig(appConfig.NamespaceName, appConfig)
+	}
 
 	if err != nil {
 		return fmt.Errorf("notifySyncConfigServices: %s", err)

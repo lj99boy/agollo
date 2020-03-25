@@ -8,11 +8,14 @@ import (
 	_ "github.com/zouyx/agollo/v3/component/serverlist"
 	"github.com/zouyx/agollo/v3/env"
 	"github.com/zouyx/agollo/v3/env/config"
-	"github.com/zouyx/agollo/v3/env/file"
 	_ "github.com/zouyx/agollo/v3/env/file/defaultfile"
 	"github.com/zouyx/agollo/v3/env/filehandler"
 	_ "github.com/zouyx/agollo/v3/loadbalance/roundrobin"
 	"github.com/zouyx/agollo/v3/storage"
+)
+
+var (
+	initAppConfigFunc func() (*config.AppConfig, error)
 )
 
 func init() {
@@ -20,7 +23,7 @@ func init() {
 
 //InitCustomConfig init config by custom
 func InitCustomConfig(loadAppConfig func() (*config.AppConfig, error)) {
-	env.InitConfig(loadAppConfig)
+	initAppConfigFunc = loadAppConfig
 }
 
 //start apollo
@@ -52,6 +55,13 @@ func SetFileHandler(file filehandler.FileHandler) {
 }
 
 func startAgollo() error {
+	// 有了配置之后才能进行初始化
+	if err := env.InitConfig(initAppConfigFunc); err != nil {
+		return err
+	}
+	notify.InitAllNotifications(nil)
+	serverlist.InitSyncServerIPList()
+
 	//first sync
 	if err := notify.SyncConfigs(); err != nil {
 		return err
